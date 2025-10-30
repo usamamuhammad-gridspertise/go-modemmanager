@@ -1,0 +1,49 @@
+# Prometheus configuration for ModemManager Exporter
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'modemmanager-monitor'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ModemManager Exporter
+  - job_name: 'modemmanager'
+    static_configs:
+      - targets: ['localhost:9539']
+        labels:
+          instance: 'modem-device'
+          environment: 'production'
+
+    # Scrape interval for modem metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+    # Metric relabeling (optional)
+    metric_relabel_configs:
+      # Add custom labels
+      - source_labels: [__name__]
+        regex: 'modemmanager_.*'
+        action: keep
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Optional: Node exporter for system metrics
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['localhost:9100']

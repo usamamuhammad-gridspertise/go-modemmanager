@@ -14,6 +14,33 @@ Tested with [ModemManager - Version 1.12.8](https://gitlab.freedesktop.org/mobil
 
 Test hardware: [SolidRun Hummingboard Edge](https://www.solid-run.com/nxp-family/hummingboard/)   and a `Quectel EC25 - EC25EFA` mini pcie modem.
 
+## Features
+
+### Library
+- Complete D-Bus bindings for ModemManager
+- Support for all major modem interfaces
+- Simple and complex operations
+- Example code included
+
+### Prometheus Exporter
+A production-ready Prometheus exporter is now available! Monitor your cellular modems with 40+ metrics covering:
+- Signal strength (LTE, UMTS, GSM, CDMA, EVDO)
+- Connection status and bearer information
+- Network registration and operator details
+- SIM card information
+- Location data (GPS)
+- SMS messaging statistics
+
+**Quick Start:**
+```bash
+cd exporter
+make build
+make run
+# Visit http://localhost:9539/metrics
+```
+
+See [exporter/README.md](exporter/README.md) for full documentation and [EXPORTER_SUMMARY.md](EXPORTER_SUMMARY.md) for complete feature list.
+
 ## Notes
  ModemManager works great together with GeoClue. A dbus wrapper can be found [here](https://github.com/maltegrosse/go-geoclue2).
 
@@ -30,7 +57,25 @@ This packages requires Go 1.13 (for the dbus lib). If you installed it and set u
 
 ## Usage
 
+### Library Usage
 You can find some examples in the [examples](examples) directory.
+
+### Prometheus Exporter Usage
+```bash
+# Build the exporter
+cd cmd/mm-exporter
+go build -o mm-exporter
+
+# Run with default settings
+./mm-exporter
+
+# Or use the Makefile
+cd exporter
+make install
+make install-service
+```
+
+See [exporter/QUICKSTART.md](exporter/QUICKSTART.md) for detailed instructions.
 
 ## Limitations
 Not all interfaces, methods and properties are supported in QMI or AT mode. In addition, not all methods and properties are supported by every modem.

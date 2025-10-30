@@ -1,0 +1,39 @@
+[Unit]
+Description=ModemManager Prometheus Exporter
+Documentation=https://github.com/maltegrosse/go-modemmanager
+After=network.target ModemManager.service
+Requires=ModemManager.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# The exporter binary
+ExecStart=/usr/local/bin/mm-exporter
+
+# Command line arguments (uncomment and modify as needed)
+# ExecStart=/usr/local/bin/mm-exporter -listen-address=":9539" -signal-rate=5s
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening options (optional, uncomment to enable)
+# NoNewPrivileges=true
+# PrivateTmp=true
+# ProtectSystem=strict
+# ProtectHome=true
+# ReadWritePaths=/var/log
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mm-exporter
+
+# Resource limits (optional)
+# LimitNOFILE=65536
+# MemoryLimit=256M
+
+[Install]
+WantedBy=multi-user.target
