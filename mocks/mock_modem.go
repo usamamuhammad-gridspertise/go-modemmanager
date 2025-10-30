@@ -82,7 +82,8 @@ type MockModem struct {
 	EquipmentIdentifierValue   string
 	DeviceIdentifierValue      string
 	StateValue                 mm.MMModemState
-	SignalQualityValue         mm.SignalQuality
+	SignalQualityPercent       uint32
+	SignalQualityRecent        bool
 	AccessTechnologiesValue    []mm.MMModemAccessTechnology
 	UnlockRequiredValue        mm.MMModemLock
 	PowerStateValue            mm.MMModemPowerState
@@ -132,7 +133,8 @@ func NewMockModem() *MockModem {
 		EquipmentIdentifierValue:   "IMEI123456789012345",
 		DeviceIdentifierValue:      "mock-0000",
 		StateValue:                 mm.MmModemStateRegistered,
-		SignalQualityValue:         mm.SignalQuality{Quality: 75, Recent: true},
+		SignalQualityPercent:       75,
+		SignalQualityRecent:        true,
 		AccessTechnologiesValue:    []mm.MMModemAccessTechnology{mm.MmModemAccessTechnologyLte},
 		UnlockRequiredValue:        mm.MmModemLockNone,
 		PowerStateValue:            mm.MmModemPowerStateOn,
@@ -196,12 +198,13 @@ func (m *MockModem) GetVoice() (mm.ModemVoice, error) {
 	return nil, m.GetVoiceError
 }
 
-func (m *MockModem) Enable(enable bool) error {
-	if enable {
-		m.StateValue = mm.MmModemStateEnabled
-	} else {
-		m.StateValue = mm.MmModemStateDisabled
-	}
+func (m *MockModem) Enable() error {
+	m.StateValue = mm.MmModemStateEnabled
+	return m.EnableError
+}
+
+func (m *MockModem) Disable() error {
+	m.StateValue = mm.MmModemStateDisabled
 	return m.EnableError
 }
 
@@ -271,8 +274,8 @@ func (m *MockModem) GetState() (mm.MMModemState, error) {
 	return m.StateValue, m.GetStateError
 }
 
-func (m *MockModem) GetSignalQuality() (mm.SignalQuality, error) {
-	return m.SignalQualityValue, nil
+func (m *MockModem) GetSignalQuality() (percent uint32, recent bool, err error) {
+	return m.SignalQualityPercent, m.SignalQualityRecent, nil
 }
 
 func (m *MockModem) GetAccessTechnologies() ([]mm.MMModemAccessTechnology, error) {
@@ -382,14 +385,14 @@ type MockModemSimple struct {
 	ConnectError    error
 	DisconnectError error
 	GetStatusError  error
-	StatusValue     mm.SimpleProperty
+	StatusValue     mm.SimpleStatus
 	BearerPathValue dbus.ObjectPath
 	ObjectPathValue dbus.ObjectPath
 }
 
 func NewMockModemSimple() *MockModemSimple {
 	return &MockModemSimple{
-		StatusValue:     mm.SimpleProperty{},
+		StatusValue:     mm.SimpleStatus{},
 		BearerPathValue: "/org/freedesktop/ModemManager1/Bearer/0",
 		ObjectPathValue: "/org/freedesktop/ModemManager1/Modem/0",
 	}
@@ -399,7 +402,7 @@ func (m *MockModemSimple) GetObjectPath() dbus.ObjectPath {
 	return m.ObjectPathValue
 }
 
-func (m *MockModemSimple) Connect(property mm.SimpleProperty) (mm.Bearer, error) {
+func (m *MockModemSimple) Connect(property mm.SimpleProperties) (mm.Bearer, error) {
 	if m.ConnectError != nil {
 		return nil, m.ConnectError
 	}
@@ -410,7 +413,7 @@ func (m *MockModemSimple) Disconnect(bearerPath dbus.ObjectPath) error {
 	return m.DisconnectError
 }
 
-func (m *MockModemSimple) GetStatus() (mm.SimpleProperty, error) {
+func (m *MockModemSimple) GetStatus() (mm.SimpleStatus, error) {
 	return m.StatusValue, m.GetStatusError
 }
 
@@ -587,8 +590,8 @@ func (b *MockBearer) GetIpTimeout() (uint32, error) {
 
 func (b *MockBearer) GetProperties() (mm.BearerProperty, error) {
 	return mm.BearerProperty{
-		Apn:          "internet",
-		IpType:       mm.MmBearerIpFamilyIpv4,
+		APN:          "internet",
+		IPType:       mm.MmBearerIpFamilyIpv4,
 		AllowRoaming: false,
 	}, nil
 }

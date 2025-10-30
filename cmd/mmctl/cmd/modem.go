@@ -193,10 +193,10 @@ func runModemInfo(cmd *cobra.Command, args []string) error {
 	}
 
 	// Signal quality
-	if signal, err := modem.GetSignalQuality(); err == nil {
+	if signalPercent, recent, err := modem.GetSignalQuality(); err == nil {
 		info["signal_quality"] = map[string]interface{}{
-			"quality": signal.Quality,
-			"recent":  signal.Recent,
+			"quality": signalPercent,
+			"recent":  recent,
 		}
 	}
 
@@ -335,7 +335,7 @@ func runModemEnable(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Enabling modem %d...\n", modemIndex)
 	}
 
-	if err := modem.Enable(true); err != nil {
+	if err := modem.Enable(); err != nil {
 		return fmt.Errorf("failed to enable modem: %w", err)
 	}
 
@@ -353,7 +353,7 @@ func runModemDisable(cmd *cobra.Command, args []string) error {
 		fmt.Printf("Disabling modem %d...\n", modemIndex)
 	}
 
-	if err := modem.Enable(false); err != nil {
+	if err := modem.Disable(); err != nil {
 		return fmt.Errorf("failed to disable modem: %w", err)
 	}
 
@@ -385,7 +385,7 @@ func runModemSignal(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	signal, err := modem.GetSignalQuality()
+	signalPercent, recent, err := modem.GetSignalQuality()
 	if err != nil {
 		return fmt.Errorf("failed to get signal quality: %w", err)
 	}
@@ -394,19 +394,19 @@ func runModemSignal(cmd *cobra.Command, args []string) error {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(map[string]interface{}{
-			"quality": signal.Quality,
-			"recent":  signal.Recent,
+			"quality": signalPercent,
+			"recent":  recent,
 		})
 	}
 
-	fmt.Printf("Signal Quality: %d%%", signal.Quality)
-	if signal.Recent {
+	fmt.Printf("Signal Quality: %d%%", signalPercent)
+	if recent {
 		fmt.Print(" (recent)")
 	}
 	fmt.Println()
 
 	// Signal bar representation
-	bars := signal.Quality / 20
+	bars := signalPercent / 20
 	fmt.Printf("Signal Bars:    [")
 	for i := uint32(0); i < 5; i++ {
 		if i < bars {

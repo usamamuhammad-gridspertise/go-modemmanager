@@ -103,8 +103,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 
 		// Get signal quality
-		if signal, err := modem.GetSignalQuality(); err == nil {
-			info.SignalQuality = signal.Quality
+		if signalPercent, _, err := modem.GetSignalQuality(); err == nil {
+			info.SignalQuality = signalPercent
 		}
 
 		// Get equipment identifier (IMEI)
@@ -117,10 +117,9 @@ func runList(cmd *cobra.Command, args []string) error {
 			info.Device = device
 		}
 
-		// Get primary port
-		if props, err := modem.GetProperties(); err == nil {
-			info.PrimaryPort = props.PrimaryPort
-		}
+		// Get primary port - Not available in current API
+		// Using device identifier as fallback
+		info.PrimaryPort = ""
 
 		modemInfos = append(modemInfos, info)
 	}

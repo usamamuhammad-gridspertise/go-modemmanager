@@ -110,12 +110,12 @@ func runConnect(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create connection properties
-	props := modemmanager.SimpleProperty{
-		Apn:          apn,
-		User:         username,
-		Password:     password,
-		IpType:       ipFamily,
-		AllowRoaming: allowRoaming,
+	props := modemmanager.SimpleProperties{
+		Apn:            apn,
+		User:           username,
+		Password:       password,
+		IpType:         ipFamily,
+		AllowedRoaming: allowRoaming,
 	}
 
 	// Connect
@@ -155,8 +155,18 @@ func runConnect(cmd *cobra.Command, args []string) error {
 			fmt.Printf("\nIPv4 Configuration:\n")
 			fmt.Printf("  Address:  %s/%d\n", ipv4Config.Address, ipv4Config.Prefix)
 			fmt.Printf("  Gateway:  %s\n", ipv4Config.Gateway)
-			if len(ipv4Config.Dns) > 0 {
-				fmt.Printf("  DNS:      %v\n", ipv4Config.Dns)
+			dns := []string{}
+			if ipv4Config.Dns1 != "" {
+				dns = append(dns, ipv4Config.Dns1)
+			}
+			if ipv4Config.Dns2 != "" {
+				dns = append(dns, ipv4Config.Dns2)
+			}
+			if ipv4Config.Dns3 != "" {
+				dns = append(dns, ipv4Config.Dns3)
+			}
+			if len(dns) > 0 {
+				fmt.Printf("  DNS:      %v\n", dns)
 			}
 		}
 
@@ -164,8 +174,18 @@ func runConnect(cmd *cobra.Command, args []string) error {
 			fmt.Printf("\nIPv6 Configuration:\n")
 			fmt.Printf("  Address:  %s/%d\n", ipv6Config.Address, ipv6Config.Prefix)
 			fmt.Printf("  Gateway:  %s\n", ipv6Config.Gateway)
-			if len(ipv6Config.Dns) > 0 {
-				fmt.Printf("  DNS:      %v\n", ipv6Config.Dns)
+			dns := []string{}
+			if ipv6Config.Dns1 != "" {
+				dns = append(dns, ipv6Config.Dns1)
+			}
+			if ipv6Config.Dns2 != "" {
+				dns = append(dns, ipv6Config.Dns2)
+			}
+			if ipv6Config.Dns3 != "" {
+				dns = append(dns, ipv6Config.Dns3)
+			}
+			if len(dns) > 0 {
+				fmt.Printf("  DNS:      %v\n", dns)
 			}
 		}
 	}
@@ -190,9 +210,9 @@ func runDisconnect(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get bearers to disconnect
-	bearers, err := modem.ListBearers()
+	bearers, err := modem.GetBearers()
 	if err != nil {
-		return fmt.Errorf("failed to list bearers: %w", err)
+		return fmt.Errorf("failed to get bearers: %w", err)
 	}
 
 	if len(bearers) == 0 {
@@ -207,7 +227,7 @@ func runDisconnect(cmd *cobra.Command, args []string) error {
 		}
 
 		if connected {
-			if err := simple.Disconnect(bearer.GetObjectPath()); err != nil {
+			if err := simple.Disconnect(bearer); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to disconnect bearer: %v\n", err)
 			} else {
 				fmt.Println("✓ Disconnected successfully")
@@ -231,9 +251,9 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get bearers
-	bearers, err := modem.ListBearers()
+	bearers, err := modem.GetBearers()
 	if err != nil {
-		return fmt.Errorf("failed to list bearers: %w", err)
+		return fmt.Errorf("failed to get bearers: %w", err)
 	}
 
 	// Build status information
@@ -242,8 +262,8 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	status["connected"] = state == modemmanager.MmModemStateConnected
 
 	// Get signal quality
-	if signal, err := modem.GetSignalQuality(); err == nil {
-		status["signal_quality"] = signal.Quality
+	if signalPercent, _, err := modem.GetSignalQuality(); err == nil {
+		status["signal_quality"] = signalPercent
 	}
 
 	// Get 3GPP info
@@ -270,34 +290,54 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			}
 
 			if props, err := bearer.GetProperties(); err == nil {
-				info["apn"] = props.Apn
-				info["ip_type"] = props.IpType.String()
+				info["apn"] = props.APN
+				info["ip_type"] = props.IPType.String()
 			}
 
 			if connected {
 				if ipv4, err := bearer.GetIp4Config(); err == nil {
+					dns := []string{}
+					if ipv4.Dns1 != "" {
+						dns = append(dns, ipv4.Dns1)
+					}
+					if ipv4.Dns2 != "" {
+						dns = append(dns, ipv4.Dns2)
+					}
+					if ipv4.Dns3 != "" {
+						dns = append(dns, ipv4.Dns3)
+					}
 					info["ipv4"] = map[string]interface{}{
 						"address": ipv4.Address,
 						"prefix":  ipv4.Prefix,
 						"gateway": ipv4.Gateway,
-						"dns":     ipv4.Dns,
+						"dns":     dns,
 					}
 				}
 
 				if ipv6, err := bearer.GetIp6Config(); err == nil && ipv6.Address != "" {
+					dns := []string{}
+					if ipv6.Dns1 != "" {
+						dns = append(dns, ipv6.Dns1)
+					}
+					if ipv6.Dns2 != "" {
+						dns = append(dns, ipv6.Dns2)
+					}
+					if ipv6.Dns3 != "" {
+						dns = append(dns, ipv6.Dns3)
+					}
 					info["ipv6"] = map[string]interface{}{
 						"address": ipv6.Address,
 						"prefix":  ipv6.Prefix,
 						"gateway": ipv6.Gateway,
-						"dns":     ipv6.Dns,
+						"dns":     dns,
 					}
 				}
 
 				if stats, err := bearer.GetStats(); err == nil {
 					info["stats"] = map[string]interface{}{
-						"bytes_rx": stats.BytesRx,
-						"bytes_tx": stats.BytesTx,
-						"duration": time.Since(time.Unix(stats.StartDate, 0)).String(),
+						"bytes_rx": stats.RxBytes,
+						"bytes_tx": stats.TxBytes,
+						"duration": fmt.Sprintf("%ds", stats.Duration),
 					}
 				}
 			}
@@ -365,9 +405,15 @@ func runStatus(cmd *cobra.Command, args []string) error {
 			}
 
 			if stats, ok := bearer["stats"].(map[string]interface{}); ok {
-				fmt.Fprintf(w, "  RX:\t%d bytes\n", stats["bytes_rx"])
-				fmt.Fprintf(w, "  TX:\t%d bytes\n", stats["bytes_tx"])
-				fmt.Fprintf(w, "  Duration:\t%s\n", stats["duration"])
+				if rxBytes, ok := stats["bytes_rx"].(uint64); ok {
+					fmt.Fprintf(w, "  RX:\t%d bytes\n", rxBytes)
+				}
+				if txBytes, ok := stats["bytes_tx"].(uint64); ok {
+					fmt.Fprintf(w, "  TX:\t%d bytes\n", txBytes)
+				}
+				if duration, ok := stats["duration"].(string); ok {
+					fmt.Fprintf(w, "  Duration:\t%s\n", duration)
+				}
 			}
 		}
 	} else {

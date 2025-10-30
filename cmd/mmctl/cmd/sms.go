@@ -131,7 +131,7 @@ func runSmsSend(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create SMS
-	sms, err := messaging.Create(smsNumber, smsText)
+	sms, err := messaging.CreateSms(smsNumber, smsText)
 	if err != nil {
 		return fmt.Errorf("failed to create SMS: %w", err)
 	}
@@ -334,7 +334,7 @@ func runSmsRead(cmd *cobra.Command, args []string) error {
 		info["storage"] = storage.String()
 	}
 
-	if smsc, err := sms.GetSmsc(); err == nil {
+	if smsc, err := sms.GetSMSC(); err == nil {
 		info["smsc"] = smsc
 	}
 
@@ -419,7 +419,7 @@ func runSmsDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	// Delete the message
-	if err := messaging.Delete(sms.GetObjectPath()); err != nil {
+	if err := messaging.Delete(sms); err != nil {
 		return fmt.Errorf("failed to delete SMS: %w", err)
 	}
 
