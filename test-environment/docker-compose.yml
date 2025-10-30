@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  modemmanager-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-modemmanager-test
+    privileged: true
+    volumes:
+      - ..:/workspace
+      - /dev/bus/usb:/dev/bus/usb:ro
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyUSB1:/dev/ttyUSB1
+      - /dev/ttyUSB2:/dev/ttyUSB2
+      - /dev/ttyUSB3:/dev/ttyUSB3
+    environment:
+      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+    stdin_open: true
+    tty: true
+    network_mode: host
+
+  # Alternative: Mock service for testing without hardware
+  modemmanager-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-modemmanager-mock
+    privileged: true
+    volumes:
+      - ..:/workspace
+      - ./mock-scripts:/mock-scripts:ro
+    environment:
+      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+      - MM_MOCK_MODE=true
+    stdin_open: true
+    tty: true
+    command: /bin/bash
